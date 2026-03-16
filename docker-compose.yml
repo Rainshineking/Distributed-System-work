@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: seckill-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: verysecret
+      MYSQL_DATABASE: seckill
+      MYSQL_USER: seckill
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - seckill-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7.0-alpine
+    container_name: seckill-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - seckill-network
+
+  # RabbitMQ 消息队列
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: seckill-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - seckill-network
+
+  # Nginx 负载均衡
+  nginx:
+    image: nginx:alpine
+    container_name: seckill-nginx
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/static:/usr/share/nginx/html:ro
+    depends_on:
+      - user-service-1
+      - user-service-2
+      - product-service
+      - inventory-service
+      - order-service
+    networks:
+      - seckill-network
+
+  # 用户服务实例 1 (端口 8081)
+  user-service-1:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: seckill-user-service-1
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=seckill
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SERVER_PORT=8080
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - seckill-network
+
+  # 用户服务实例 2 (端口 8082)
+  user-service-2:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: seckill-user-service-2
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=seckill
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SERVER_PORT=8080
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - seckill-network
+
+  # 商品服务
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: seckill-product-service
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=seckill
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SERVER_PORT=8080
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - seckill-network
+
+  # 库存服务
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: seckill-inventory-service
+    ports:
+      - "8084:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=seckill
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SERVER_PORT=8080
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - seckill-network
+
+  # 订单服务
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: seckill-order-service
+    ports:
+      - "8085:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=seckill
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SERVER_PORT=8080
+    depends_on:
+      - mysql
+      - rabbitmq
+      - redis
+    networks:
+      - seckill-network
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
+
+networks:
+  seckill-network:
+    driver: bridge

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>秒杀系统 - 首页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .product-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .product-card .price {
+            color: #e74c3c;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .product-card .stock {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background: #5a6fd6;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            min-width: 150px;
+        }
+
+        .stat-item .number {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .stat-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛒 秒杀系统</h1>
+            <p>商品库存与秒杀系统 - 分布式系统设计作业</p>
+        </header>
+
+        <!-- 统计数据 -->
+        <div class="section">
+            <h2>📊 系统统计</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="number" id="totalUsers">0</div>
+                    <div class="label">注册用户</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="totalProducts">0</div>
+                    <div class="label">商品数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="totalOrders">0</div>
+                    <div class="label">订单数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="seckillCount">0</div>
+                    <div class="label">秒杀成功</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品列表 -->
+        <div class="section">
+            <h2>🔥 秒杀商品</h2>
+            <div class="product-grid" id="productList">
+                <!-- 商品卡片将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 用户登录 -->
+        <div class="section">
+            <h2>🔐 用户登录</h2>
+            <div class="login-form">
+                <div id="loginMessage" class="message"></div>
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="请输入密码">
+                </div>
+                <button class="btn" onclick="login()">登录</button>
+                <button class="btn" onclick="showRegister()" style="background: #27ae60;">注册</button>
+            </div>
+        </div>
+
+        <!-- 秒杀操作 -->
+        <div class="section">
+            <h2>⚡ 秒杀操作</h2>
+            <div style="max-width: 400px; margin: 0 auto; text-align: center;">
+                <div class="form-group">
+                    <label for="productId">商品ID</label>
+                    <input type="number" id="productId" placeholder="输入商品ID">
+                </div>
+                <button class="btn" onclick="seckill()">立即秒杀</button>
+                <button class="btn" onclick="checkOrder()" style="background: #f39c12;">查询订单</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟商品数据
+        const products = [
+            { id: 1, name: 'iPhone 15 Pro', price: 9999, stock: 10 },
+            { id: 2, name: 'iPad Air', price: 4999, stock: 20 },
+            { id: 3, name: 'MacBook Pro', price: 15999, stock: 5 },
+            { id: 4, name: 'AirPods Pro', price: 1999, stock: 50 }
+        ];
+
+        // 渲染商品列表
+        function renderProducts() {
+            const productList = document.getElementById('productList');
+            productList.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <h3>${product.name}</h3>
+                    <div class="price">¥${product.price}</div>
+                    <div class="stock">库存: ${product.stock} 件</div>
+                    <button class="btn" onclick="seckill(${product.id})">秒杀</button>
+                </div>
+            `).join('');
+        }
+
+        // 显示注册表单
+        function showRegister() {
+            alert('注册功能待实现');
+        }
+
+        // 登录
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('loginMessage');
+
+            if (!username || !password) {
+                message.className = 'message error';
+                message.textContent = '请输入用户名和密码';
+                return;
+            }
+
+            // 模拟登录
+            message.className = 'message success';
+            message.textContent = `登录成功！欢迎 ${username}`;
+        }
+
+        // 秒杀
+        function seckill(productId) {
+            if (!productId) {
+                productId = document.getElementById('productId').value;
+            }
+
+            if (!productId) {
+                alert('请选择商品');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '秒杀中...';
+
+            // 模拟秒杀请求
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '立即秒杀';
+                alert('秒杀成功！订单已创建');
+            }, 1000);
+        }
+
+        // 查询订单
+        function checkOrder() {
+            alert('订单查询功能待实现');
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+        });
+    </script>
+</body>
+</html>
