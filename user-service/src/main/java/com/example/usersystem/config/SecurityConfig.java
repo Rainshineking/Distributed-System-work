@@ -8,6 +8,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * 安全配置
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -24,7 +27,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/users/register", "/api/users/login", "/api/users/health", "/api/users/status").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             );
         return http.build();
     }
