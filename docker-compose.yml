@@ -1,3 +1,9 @@
+x-registry-mirror: &registry-mirror
+  registry-mirrors:
+    - https://docker.xuanyuan.me
+    - https://hub-mirror.c.163.com
+    - https://mirror.baidubce.com
+
 version: '3.8'
 
 services:
@@ -16,6 +22,12 @@ services:
       - mysql-data:/var/lib/mysql
     networks:
       - seckill-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis 缓存
   redis:
@@ -27,6 +39,7 @@ services:
       - redis-data:/data
     networks:
       - seckill-network
+    restart: always
 
   # RabbitMQ 消息队列
   rabbitmq:
@@ -42,133 +55,166 @@ services:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
       - seckill-network
+    restart: always
 
-  # Nginx 负载均衡
-  nginx:
-    image: nginx:alpine
-    container_name: seckill-nginx
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/static:/usr/share/nginx/html:ro
-    depends_on:
-      - user-service-1
-      - user-service-2
-      - product-service
-      - inventory-service
-      - order-service
-    networks:
-      - seckill-network
-
-  # 用户服务实例 1 (端口 8081)
+  # 用户服务 - 实例 1
   user-service-1:
     build:
       context: ./user-service
       dockerfile: Dockerfile
-    container_name: seckill-user-service-1
+    container_name: user-service-1
     ports:
       - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
-      - SERVER_PORT=8080
-    depends_on:
-      - mysql
-      - redis
+      - SPRING_DATA_REDIS_HOST=redis
+      - JWT_SECRET=ThisIsAVeryLongAndSecureSecretKeyThatIsMoreThan512BitsForHS512AlgorithmSecurity
     networks:
       - seckill-network
+    restart: always
 
-  # 用户服务实例 2 (端口 8082)
+  # 用户服务 - 实例 2（负载均衡）
   user-service-2:
     build:
       context: ./user-service
       dockerfile: Dockerfile
-    container_name: seckill-user-service-2
+    container_name: user-service-2
     ports:
       - "8082:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
-      - SERVER_PORT=8080
-    depends_on:
-      - mysql
-      - redis
+      - SPRING_DATA_REDIS_HOST=redis
+      - JWT_SECRET=ThisIsAVeryLongAndSecureSecretKeyThatIsMoreThan512BitsForHS512AlgorithmSecurity
     networks:
       - seckill-network
+    restart: always
 
   # 商品服务
   product-service:
     build:
       context: ./product-service
       dockerfile: Dockerfile
-    container_name: seckill-product-service
+    container_name: product-service
     ports:
       - "8083:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
-      - SERVER_PORT=8080
-    depends_on:
-      - mysql
-      - redis
+      - SPRING_DATA_REDIS_HOST=redis
     networks:
       - seckill-network
+    restart: always
 
   # 库存服务
   inventory-service:
     build:
       context: ./inventory-service
       dockerfile: Dockerfile
-    container_name: seckill-inventory-service
+    container_name: inventory-service
     ports:
       - "8084:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
-      - SERVER_PORT=8080
-    depends_on:
-      - mysql
-      - redis
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_REDISSON_HOST=redis://redis:6379
     networks:
       - seckill-network
+    restart: always
 
   # 订单服务
   order-service:
     build:
       context: ./order-service
       dockerfile: Dockerfile
-    container_name: seckill-order-service
+    container_name: order-service
     ports:
       - "8085:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
-      - SERVER_PORT=8080
-    depends_on:
-      - mysql
-      - rabbitmq
-      - redis
+      - SPRING_DATA_REDIS_HOST=redis
     networks:
       - seckill-network
+    restart: always
+
+  # API 网关
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service-1
+      - user-service-2
+      - product-service
+      - inventory-service
+      - order-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8080
+    networks:
+      - seckill-network
+    restart: always
+
+  # Nginx 负载均衡和动静分离
+  nginx:
+    image: nginx:alpine
+    container_name: seckill-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/static:/usr/share/nginx/html:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - seckill-network
+    restart: always
 
 volumes:
   mysql-data:

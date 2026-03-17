@@ -1,10 +1,10 @@
 # Dockerfile for user-service
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jre
 LABEL maintainer="distributed-system-work"
 
 WORKDIR /app
 
-COPY target/user-service.jar app.jar
+COPY target/user-service-1.0.0.jar app.jar
 
 EXPOSE 8080
 

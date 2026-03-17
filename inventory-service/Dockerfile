@@ -1,9 +1,11 @@
 # Dockerfile for inventory-service
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jre
 LABEL maintainer="distributed-system-work"
 
-COPY target/inventory-service.jar app.jar
+WORKDIR /app
 
-EXPOSE 8084
+COPY target/inventory-service-1.0.0.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

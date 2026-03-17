@@ -7,31 +7,28 @@
 - ✅ 服务拆分与治理（用户、商品、库存、订单服务）
 - ✅ 分布式事务与一致性（防止超卖）
 - ✅ 高并发处理（Redis + 分布式锁）
-- ✅ 负载均衡（Nginx轮询）
+- ✅ 负载均衡（Nginx 轮询）
 - ✅ 容器化部署（Docker + Docker Compose）
-- ✅ 缓存策略（Redis缓存 + 缓存问题处理）
+- ✅ 缓存策略（Redis 缓存 + 缓存问题处理）
 
 ## 项目结构
 
 ```
 Distributed-System-work/
-├── pom.xml                           # 父POM（Maven多模块）
-├── docker-compose.yml                # Docker编排文件
+├── pom.xml                           # 父 POM（Maven 多模块）
+├── docker-compose.yml                # Docker 编排文件
 ├── nginx/
-│   ├── nginx.conf                    # Nginx配置（负载均衡+动静分离）
+│   ├── nginx.conf                    # Nginx 配置（负载均衡 + 动静分离）
 │   └── static/                       # 静态资源
 │       └── index.html                # 前端页面
-├── user-service/                     # 用户服务（改造自UserSystem）
-│   ├── src/main/java/...
-│   ├── pom.xml
-│   └── Dockerfile
+├── user-service/                     # 用户服务
 ├── product-service/                  # 商品服务
 ├── inventory-service/                # 库存服务
 ├── order-service/                    # 订单服务
-├── api-gateway/                      # API网关
+├── api-gateway/                      # API 网关
 ├── common/                           # 公共模块
 │   ├── common-core/                  # 核心工具类
-│   ├── common-dto/                   # DTO定义
+│   ├── common-dto/                   # DTO 定义
 │   └── common-exception/             # 异常处理
 ├── documentation/                    # 设计文档
 │   └── 系统设计文档.md
@@ -42,7 +39,7 @@ Distributed-System-work/
 
 ### 后端技术
 - Spring Boot 3.2
-- Spring Cloud Gateway (API网关)
+- Spring Cloud Gateway (API 网关)
 - MySQL 8.0
 - Redis 7.0
 - Redisson (分布式锁)
@@ -65,284 +62,475 @@ Distributed-System-work/
 - Java 21+
 - Maven 3.8+
 - Docker + Docker Compose
-- MySQL 8.0
-- Redis 7.0
-- RabbitMQ 3.12
 
-### 本地开发
+### 方式一：Docker Compose 一键启动（推荐 - 全容器化）
+
+```bash
+cd d:\大三下资料\分布式\Distributed-System-work
+docker-compose up -d
+```
+
+启动后包含以下容器：
+- MySQL (端口：3307)
+- Redis (端口：6379)
+- RabbitMQ (端口：5672, 15672)
+- user-service-1 (端口：8081)
+- user-service-2 (端口：8082)
+- product-service (端口：8083)
+- inventory-service (端口：8084)
+- order-service (端口：8085)
+- api-gateway (端口：8080)
+- nginx (端口：80)
+
+**查看日志：**
+```bash
+docker-compose logs -f
+```
+
+**停止所有服务：**
+```bash
+docker-compose down
+```
+
+**重启某个服务：**
+```bash
+docker-compose restart product-service
+```
+
+### 方式二：本地开发模式（适合调试）
 
 #### 1. 启动中间件
 
 ```bash
-# 启动MySQL
-docker run -d --name mysql -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=verysecret \
-  -e MYSQL_DATABASE=seckill \
-  -e MYSQL_USER=seckill \
-  -e MYSQL_PASSWORD=secret \
-  mysql:8.0
-
-# 启动Redis
-docker run -d --name redis -p 6379:6379 redis:7.0-alpine
-
-# 启动RabbitMQ
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 \
-  -e RABBITMQ_DEFAULT_USER=guest \
-  -e RABBITMQ_DEFAULT_PASS=guest \
-  rabbitmq:3.12-management
+docker-compose up -d mysql redis rabbitmq nginx
 ```
 
-#### 2. 启动服务
+#### 2. 安装本地依赖
 
 ```bash
-# 启动用户服务（多实例）
+mvn clean install -DskipTests -U
+```
+
+#### 3. 启动各个服务（需要多个终端）
+
+```bash
+# 终端 1 - 用户服务实例 1
 cd user-service
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8081"
+mvn spring-boot:run
+
+# 终端 2 - 用户服务实例 2
+cd user-service
 mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8082"
 
-# 启动商品服务
-cd ../product-service
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8083"
+# 终端 3 - 商品服务
+cd product-service
+mvn spring-boot:run
 
-# 启动库存服务
-cd ../inventory-service
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8084"
+# 终端 4 - 库存服务
+cd inventory-service
+mvn spring-boot:run
 
-# 启动订单服务
-cd ../order-service
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8085"
-
-# 启动API网关
-cd ../api-gateway
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8080"
+# 终端 5 - 订单服务
+cd order-service
+mvn spring-boot:run
 ```
 
-#### 3. 访问系统
-
-- 前端页面: http://localhost:80
-- API网关: http://localhost:8080
-- 健康检查: http://localhost:8080/actuator/health
-
-### Docker Compose部署
-
+**注意：** 本地开发模式下，Nginx 需要手动启动：
 ```bash
-# 一键启动所有服务
-docker-compose up -d
-
-# 查看服务状态
-docker-compose ps
-
-# 查看日志
-docker-compose logs -f
-
-# 停止服务
-docker-compose down
+nginx -p . -c nginx/nginx.conf
 ```
 
-## 服务端口
+## 服务端口说明
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| Nginx | 80 | 负载均衡 + 动静分离 |
-| API Gateway | 8080 | API网关 |
-| User Service 1 | 8081 | 用户服务实例1 |
-| User Service 2 | 8082 | 用户服务实例2 |
+| Nginx | 80 | 统一入口，负载均衡 |
+| API Gateway | 8080 | API 网关 |
+| User Service | 8081/8082 | 用户服务（多实例） |
 | Product Service | 8083 | 商品服务 |
 | Inventory Service | 8084 | 库存服务 |
 | Order Service | 8085 | 订单服务 |
-| MySQL | 3306 | 数据库 |
+| MySQL | 3307 | 数据库 |
 | Redis | 6379 | 缓存 |
 | RabbitMQ | 5672 | 消息队列 |
 
-## 核心功能
+## API 接口文档
 
-### 1. 用户注册登录 ✅
+### 1. 用户服务
 
-**功能特性**:
-- ✅ 用户注册（用户名、密码、邮箱）
-- ✅ 用户登录（JWT Token 认证）
-- ✅ 密码加密存储（BCrypt）
-- ✅ 用户信息查询
-- ✅ 多实例部署（8081/8082）
-
-**API 接口**:
+#### 用户注册
 ```
-POST /api/users/register    # 用户注册
-POST /api/users/login       # 用户登录
-GET  /api/users/{id}        # 查询用户
-GET  /api/users/health      # 健康检查
+POST http://localhost:8081/api/users/register
+Content-Type: application/json
+{
+  "username": "testuser",
+  "password": "123456",
+  "email": "test@example.com"
+}
 ```
 
-**快速测试**:
+#### 用户登录
+```
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+{
+  "username": "testuser",
+  "password": "123456"
+}
+```
+
+响应：
+```json
+{
+  "code": 200,
+  "message": "登录成功",
+  "data": {
+    "userId": 1,
+    "username": "testuser",
+    "token": "eyJhbGciOiJIUzUxMiJ9..."
+  }
+}
+```
+
+### 2. 商品服务
+
+#### 创建商品
+```
+POST http://localhost:8083/api/products
+Content-Type: application/json
+Authorization: Bearer {token}
+{
+  "name": "iPhone 15",
+  "price": 7999.00,
+  "description": "Apple iPhone 15 128GB",
+  "imageUrl": "https://example.com/iphone15.jpg"
+}
+```
+
+#### 获取商品详情（带 Redis 缓存）
+```
+GET http://localhost:8083/api/products/{id}
+Authorization: Bearer {token}
+```
+
+#### 获取所有商品
+```
+GET http://localhost:8083/api/products
+Authorization: Bearer {token}
+```
+
+#### 更新商品
+```
+PUT http://localhost:8083/api/products/{id}
+Content-Type: application/json
+Authorization: Bearer {token}
+{
+  "name": "iPhone 15 Pro",
+  "price": 8999.00,
+  "description": "Apple iPhone 15 Pro 256GB",
+  "imageUrl": "https://example.com/iphone15pro.jpg"
+}
+```
+
+#### 删除商品
+```
+DELETE http://localhost:8083/api/products/{id}
+Authorization: Bearer {token}
+```
+
+### 3. 库存服务
+
+#### 创建库存
+```
+POST http://localhost:8084/api/inventory/{productId}?stock=1000
+Authorization: Bearer {token}
+```
+
+#### 获取库存
+```
+GET http://localhost:8084/api/inventory/{productId}
+Authorization: Bearer {token}
+```
+
+#### 扣减库存（分布式锁保护）
+```
+POST http://localhost:8084/api/inventory/decrease
+Content-Type: application/json
+Authorization: Bearer {token}
+{
+  "productId": 1,
+  "quantity": 1
+}
+```
+
+#### 确认库存
+```
+POST http://localhost:8084/api/inventory/confirm
+Content-Type: application/json
+Authorization: Bearer {token}
+{
+  "productId": 1,
+  "quantity": 1
+}
+```
+
+#### 回滚库存
+```
+POST http://localhost:8084/api/inventory/rollback
+Content-Type: application/json
+Authorization: Bearer {token}
+{
+  "productId": 1,
+  "quantity": 1
+}
+```
+
+### 4. 订单服务
+
+#### 创建订单
+```
+POST http://localhost:8085/api/orders
+Content-Type: application/json
+Authorization: Bearer {token}
+{
+  "userId": 1,
+  "productId": 1,
+  "quantity": 1,
+  "totalPrice": 7999.00
+}
+```
+
+#### 获取订单详情
+```
+GET http://localhost:8085/api/orders/{id}
+Authorization: Bearer {token}
+```
+
+#### 获取用户订单列表
+```
+GET http://localhost:8085/api/orders/user/{userId}
+Authorization: Bearer {token}
+```
+
+#### 更新订单状态
+```
+PUT http://localhost:8085/api/orders/{id}/status?status=1
+Authorization: Bearer {token}
+```
+
+### 5. 健康检查
+
+所有服务都提供健康检查接口：
+```
+GET http://localhost:{port}/api/{service}/health
+GET http://localhost:{port}/api/{service}/status
+```
+
+## 数据库设计
+
+### 表结构
+
+#### user (用户表)
+```sql
+CREATE TABLE user (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  email VARCHAR(100),
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### product (商品表)
+```sql
+CREATE TABLE product (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(200) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  description VARCHAR(1000),
+  image_url VARCHAR(500),
+  status INT DEFAULT 1,
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### inventory (库存表)
+```sql
+CREATE TABLE inventory (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  product_id BIGINT NOT NULL UNIQUE,
+  stock INT NOT NULL DEFAULT 0,
+  locked_stock INT NOT NULL DEFAULT 0,
+  version INT DEFAULT 0,
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### orders (订单表)
+```sql
+CREATE TABLE orders (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  product_id BIGINT NOT NULL,
+  quantity INT NOT NULL,
+  total_price DECIMAL(10,2) NOT NULL,
+  status INT DEFAULT 0,
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+## 核心功能实现
+
+### 1. Redis 缓存（商品详情）
+
+商品服务使用 Redis 缓存商品详情，减少数据库压力：
+- 缓存过期时间：30 分钟
+- 先查缓存，缓存未命中则查数据库并回写缓存
+- 更新/删除商品时同步删除缓存
+
+### 2. 分布式锁（防止超卖）
+
+库存服务使用 Redisson 实现分布式锁：
+- 锁 key：`lock:inventory:{productId}`
+- 等待时间：5 秒
+- 持有时间：10 秒
+- 确保同一商品同一时间只有一个线程扣减库存
+
+### 3. 缓存问题处理
+
+#### 缓存穿透
+- 使用布隆过滤器（可选）
+- 缓存空对象
+
+#### 缓存击穿
+- 使用分布式锁
+- 热点数据永不过期
+
+#### 缓存雪崩
+- 缓存过期时间随机化
+- 多级缓存策略
+
+## Nginx 配置
+
+### 负载均衡
+
+Nginx 配置了三种负载均衡算法：
+
+#### 1. 轮询（默认）
+```nginx
+upstream user_services {
+    server user-service:8081;
+    server user-service:8082;
+}
+```
+
+#### 2. ip_hash
+```nginx
+upstream user_services {
+    ip_hash;
+    server user-service:8081;
+    server user-service:8082;
+}
+```
+
+#### 3. least_conn
+```nginx
+upstream user_services {
+    least_conn;
+    server user-service:8081;
+    server user-service:8082;
+}
+```
+
+### 动静分离
+
+```nginx
+# 静态资源
+location /static/ {
+    root /usr/share/nginx/html;
+    expires 7d;
+}
+
+# 动态请求
+location /api/ {
+    proxy_pass http://user_services;
+}
+```
+
+## JMeter 压力测试
+
+### 测试计划
+
+#### 1. 负载均衡测试
+- 线程组：1000 线程
+- 循环次数：100
+- 接口：用户登录
+- 验证：8081 和 8082 端口的请求数大致相等
+
+#### 2. 静态资源测试
+- 线程组：500 线程
+- 循环次数：50
+- 资源：/static/index.html
+- 验证：响应时间 < 10ms
+
+#### 3. 动态接口测试
+- 线程组：200 线程
+- 循环次数：100
+- 接口：商品详情查询
+- 验证：缓存命中率 > 80%
+
+### 测试结果验证
+
+查看服务日志：
 ```bash
-# 注册
-curl -X POST http://localhost:8081/api/users/register \
-  -H "Content-Type: application/json" \
-  -d "{\"username\":\"testuser\",\"password\":\"123456\",\"email\":\"test@example.com\"}"
-
-# 登录
-curl -X POST http://localhost:8081/api/users/login \
-  -H "Content-Type: application/json" \
-  -d "{\"username\":\"testuser\",\"password\":\"123456\"}"
+docker logs user-service-1 | grep "POST /api/users/login"
+docker logs user-service-2 | grep "POST /api/users/login"
 ```
 
-### 2. 秒杀功能
+## 停止服务
 
-**防止超卖的三层防护**:
-1. **Redis 预减库存** - 原子操作，减少数据库压力
-2. **分布式锁** - Redisson 实现，保证库存一致性
-3. **数据库乐观锁** - 最终兜底方案
-
-**秒杀流程**:
-```
-用户请求 → Redis 预减 → 分布式锁 → 双重检查 → 创建订单 → 减库存 → 返回结果
-```
-
-### 2. 负载均衡
-
-**Nginx配置**:
-- 轮询算法（默认）
-- 动静分离
-- 反向代理
-
-**多实例部署**:
-- 用户服务启动2个实例（8081/8082）
-- Nginx自动轮询分发请求
-
-### 3. 缓存策略
-
-**Redis缓存**:
-- 商品详情缓存
-- 用户会话缓存
-- 库存缓存
-
-**缓存问题处理**:
-- 缓存穿透 - 缓存空值 + 布隆过滤器
-- 缓存击穿 - 互斥锁 + 永不过期
-- 缓存雪崩 - 随机过期时间 + 多级缓存
-
-## API接口
-
-### 用户服务
-- `POST /api/users/register` - 用户注册
-- `POST /api/users/login` - 用户登录
-
-### 商品服务
-- `GET /api/products/{id}` - 查询商品
-- `GET /api/products` - 查询所有商品
-
-### 库存服务
-- `POST /api/inventory/seckill` - 秒杀
-- `GET /api/inventory/{productId}` - 查询库存
-
-### 订单服务
-- `POST /api/orders` - 创建订单
-- `GET /api/orders/{id}` - 查询订单
-
-## 项目结构说明
-
-### 父POM (pom.xml)
-- 统一管理依赖版本
-- 定义Maven多模块结构
-- 配置Docker插件
-
-### 公共模块 (common/)
-- **common-core**: 核心工具类、统一返回
-- **common-dto**: 数据传输对象
-- **common-exception**: 异常处理
-
-### 服务模块
-每个服务都是独立的Spring Boot项目，包含：
-- Controller: 控制层
-- Service: 业务层
-- Mapper/Repository: 数据访问层
-- Entity: 实体类
-- Dockerfile: 容器化配置
-
-## 测试
-
-### 单元测试
 ```bash
-mvn test
+docker-compose down
 ```
-
-### 压力测试
-使用JMeter进行压力测试：
-- 并发秒杀场景
-- 高并发查询场景
-- 系统稳定性测试
-
-### 性能指标
-- 响应时间
-- QPS
-- 错误率
-- CPU/内存使用率
-
-## 部署说明
-
-### 本地开发
-1. 启动MySQL、Redis、RabbitMQ
-2. 修改各服务的 `application.properties` 中的数据库连接
-3. 逐个启动服务
-
-### Docker部署
-1. 配置 `docker-compose.yml`
-2. 运行 `docker-compose up -d`
-3. 访问 http://localhost:80
 
 ## 常见问题
 
 ### 1. 端口冲突
-- 检查端口占用：`netstat -ano | findstr :8081`
-- 修改 `application.properties` 中的端口
+修改 `docker-compose.yml` 中的端口映射
 
-### 2. 数据库连接失败
-- 检查MySQL是否启动：`docker ps | grep mysql`
-- 检查连接参数是否正确
+### 2. MySQL 连接失败
+确保 MySQL 容器已启动，检查 JDBC URL 配置
 
-### 3. Redis连接失败
-- 检查Redis是否启动：`docker ps | grep redis`
-- 检查连接参数是否正确
+### 3. Redis 连接失败
+确保 Redis 容器已启动，检查 Redis 配置
 
-## 作业要求完成情况
+### 4. JWT Token 无效
+检查 JWT 密钥配置，确保密钥长度 >= 512 bits
 
-| 要求 | 状态 | 说明 |
-|------|------|------|
-| 系统设计文档 | ✅ | `documentation/系统设计文档.md` |
-| 服务拆分 | ✅ | 用户、商品、库存、订单服务 |
-| API接口定义 | ✅ | RESTful API设计 |
-| 数据库ER图 | ✅ | ER图 + 表结构 |
-| 技术栈选型 | ✅ | Spring Boot + Redis + MySQL等 |
-| Git初始化 | ✅ | 项目结构已搭建 |
-| 开发环境 | ✅ | Docker + Docker Compose |
-| 用户注册登录 | ✅ | user-service |
-| 多实例部署 | ✅ | 用户服务2个实例 |
-| Nginx负载均衡 | ✅ | 轮询算法 |
-| 动静分离 | ✅ | Nginx配置 |
-| Redis缓存 | ✅ | 商品缓存、库存缓存 |
-| 缓存问题处理 | ✅ | 穿透、击穿、雪崩 |
-| JMeter压测 | ✅ | 压测脚本 |
+## 作业完成清单
 
-## 扩展功能
-
-### 已实现
-- ✅ 服务拆分与治理
-- ✅ 分布式锁（Redisson）
-- ✅ 负载均衡（Nginx）
+- ✅ 系统设计文档（`documentation/系统设计文档.md`）
+- ✅ 系统架构图（服务拆分）
+- ✅ RESTful API 接口定义
+- ✅ 数据库 ER 图
+- ✅ 技术栈选型说明
+- ✅ Git 仓库初始化
+- ✅ Spring Boot + JPA + MySQL 环境
+- ✅ 用户注册登录功能
+- ✅ Docker 容器化部署
+- ✅ Nginx 负载均衡
 - ✅ 动静分离
-- ✅ Redis缓存
-- ✅ 缓存问题处理
+- ✅ Redis 缓存
+- ✅ 分布式锁（Redisson）
+- ✅ 缓存穿透/击穿/雪崩处理
+- ⏳ JMeter 压力测试（需手动执行）
 
-### 待实现
-- ⏳ API网关认证
-- ⏳ 服务发现（Eureka）
-- ⏳ 配置中心（Config）
-- ⏳ 链路追踪（SkyWalking）
+## 下一步
 
-## 贡献者
-
-- [你的名字] - 分布式系统课程作业
-
-## 许可证
-
-MIT License
+1. 使用 JMeter 进行压力测试
+2. 观察响应时间和负载均衡效果
+3. 验证缓存命中率和分布式锁效果

@@ -1,9 +1,11 @@
 # Dockerfile for api-gateway
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jre
 LABEL maintainer="distributed-system-work"
 
-COPY target/api-gateway.jar app.jar
+WORKDIR /app
+
+COPY target/api-gateway-1.0.0.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
