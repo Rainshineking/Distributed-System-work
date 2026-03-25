@@ -10,6 +10,8 @@
 - ✅ 负载均衡（Nginx 轮询）
 - ✅ 容器化部署（Docker + Docker Compose）
 - ✅ 缓存策略（Redis 缓存 + 缓存问题处理）
+- ✅ **读写分离**（MySQL 主从复制 + 自动切换）
+- ✅ **ElasticSearch 搜索**（商品全文检索）
 
 ## 项目结构
 
@@ -40,10 +42,11 @@ Distributed-System-work/
 ### 后端技术
 - Spring Boot 3.2
 - Spring Cloud Gateway (API 网关)
-- MySQL 8.0
+- MySQL 8.0 (主从复制、读写分离)
 - Redis 7.0
 - Redisson (分布式锁)
 - RabbitMQ (消息队列)
+- ElasticSearch 8.11 (全文检索)
 - JWT (认证)
 
 ### 前端技术
@@ -70,10 +73,13 @@ cd d:\大三下资料\分布式\Distributed-System-work
 docker-compose up -d
 ```
 
-启动后包含以下容器：
-- MySQL (端口：3307)
+**启动后包含以下容器：**
+- MySQL Master (端口：3307) - 主库（写库）
+- MySQL Slave (端口：3308) - 从库（读库）
 - Redis (端口：6379)
 - RabbitMQ (端口：5672, 15672)
+- ElasticSearch (端口：9200)
+- Kibana (端口：5601) - ES 可视化界面
 - user-service-1 (端口：8081)
 - user-service-2 (端口：8082)
 - product-service (端口：8083)
@@ -150,9 +156,12 @@ nginx -p . -c nginx/nginx.conf
 | Product Service | 8083 | 商品服务 |
 | Inventory Service | 8084 | 库存服务 |
 | Order Service | 8085 | 订单服务 |
-| MySQL | 3307 | 数据库 |
+| MySQL Master | 3307 | 数据库主库（写） |
+| MySQL Slave | 3308 | 数据库从库（读） |
 | Redis | 6379 | 缓存 |
 | RabbitMQ | 5672 | 消息队列 |
+| ElasticSearch | 9200 | 搜索引擎 |
+| Kibana | 5601 | ES 可视化界面 |
 
 ## API 接口文档
 
@@ -235,6 +244,33 @@ Authorization: Bearer {token}
 #### 删除商品
 ```
 DELETE http://localhost:8083/api/products/{id}
+Authorization: Bearer {token}
+```
+
+#### 搜索商品（ElasticSearch 全文检索）
+```
+GET http://localhost:8083/api/products/search?keyword=iPhone&page=0&size=10
+Authorization: Bearer {token}
+```
+
+响应：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [...],
+    "totalElements": 100,
+    "totalPages": 10,
+    "number": 0,
+    "size": 10
+  }
+}
+```
+
+#### 同步所有商品到 ElasticSearch
+```
+POST http://localhost:8083/api/products/sync/all
 Authorization: Bearer {token}
 ```
 
@@ -402,17 +438,61 @@ CREATE TABLE orders (
 
 ### 3. 缓存问题处理
 
-#### 缓存穿透
-- 使用布隆过滤器（可选）
-- 缓存空对象
+#### 缓存穿透（已实现）
+- **问题**: 查询不存在的数据，每次都打到数据库
+- **解决方案**: 
+  - ✅ 缓存空对象（设置 5 分钟过期时间）
+  - 代码位置：`ProductService.getProductById()`
+  - 实现逻辑：查询数据库后，如果不存在也缓存空值，防止重复查询
 
-#### 缓存击穿
-- 使用分布式锁
-- 热点数据永不过期
+#### 缓存击穿（已实现）
+- **问题**: 热点数据过期，大量请求同时打到数据库
+- **解决方案**:
+  - ✅ 互斥锁（ReentrantLock）：只有一个线程重建缓存
+  - ✅ 双重检查锁：防止其他线程已重建缓存
+  - 代码位置：`ProductService.getProductById()`
 
-#### 缓存雪崩
-- 缓存过期时间随机化
-- 多级缓存策略
+#### 缓存雪崩（已实现）
+- **问题**: 大量缓存同时过期
+- **解决方案**:
+  - ✅ 随机过期时间：基础 30 分钟 ±5 分钟随机波动
+  - 代码位置：`ProductService.getProductById()`
+  - 实现逻辑：`randomTTL = 30 + random(-5, 5)`
+
+### 4. 读写分离（已实现）
+
+#### MySQL 主从复制
+- **主库（Master）**：端口 3307，处理所有写操作（INSERT、UPDATE、DELETE）
+- **从库（Slave）**：端口 3308，处理所有读操作（SELECT）
+- **复制方式**：GTID 复制
+- **配置文件**：
+  - `mysql/master.cnf` - 主库配置
+  - `mysql/slave.cnf` - 从库配置
+
+#### 自动切换
+- **实现方式**：AOP 切面 + 路由数据源
+- **代码位置**：`DataSourceAspect`、`RoutingDataSource`
+- **切换规则**：
+  - 写操作（create/save/add/update/delete/remove）→ 主库
+  - 读操作（get/find/query/list/search）→ 从库
+
+### 5. ElasticSearch 全文检索（已实现）
+
+#### 商品搜索
+- **分词器**：ik_max_word（中文分词）
+- **搜索字段**：商品名称、商品描述
+- **代码位置**：`ProductSearchService`、`ProductController.searchProducts()`
+
+#### 数据同步
+- **同步时机**：
+  - 创建商品时自动同步
+  - 更新商品时自动同步
+  - 删除商品时自动删除
+- **全量同步**：`POST /api/products/sync/all`
+
+#### Kibana 可视化
+- **访问地址**：http://localhost:5601
+- **索引名称**：products
 
 ## Nginx 配置
 
@@ -513,6 +593,7 @@ docker-compose down
 
 ## 作业完成清单
 
+### 基础功能
 - ✅ 系统设计文档（`documentation/系统设计文档.md`）
 - ✅ 系统架构图（服务拆分）
 - ✅ RESTful API 接口定义
@@ -521,16 +602,30 @@ docker-compose down
 - ✅ Git 仓库初始化
 - ✅ Spring Boot + JPA + MySQL 环境
 - ✅ 用户注册登录功能
+
+### 容器化与部署
 - ✅ Docker 容器化部署
 - ✅ Nginx 负载均衡
 - ✅ 动静分离
+
+### 高并发处理
 - ✅ Redis 缓存
 - ✅ 分布式锁（Redisson）
-- ✅ 缓存穿透/击穿/雪崩处理
-- ⏳ JMeter 压力测试（需手动执行）
+- ✅ 缓存穿透/击穿/雪崩处理（代码已实现）
+
+### 高并发读（本次新增）
+- ✅ **读写分离**（MySQL 主从复制 + AOP 自动切换）
+- ✅ **ElasticSearch 搜索**（商品全文检索）
+
+### 测试
+- ✅ JMeter 压力测试（测试计划已创建）
 
 ## 下一步
 
-1. 使用 JMeter 进行压力测试
-2. 观察响应时间和负载均衡效果
-3. 验证缓存命中率和分布式锁效果
+1. ✅ JMeter 测试计划已创建（`jmeter/seckill_system_test_plan.jmx`）
+2. 执行 JMeter 压力测试（参考 `jmeter/README.md`）
+3. 观察响应时间和负载均衡效果
+4. 验证缓存命中率和分布式锁效果
+5. 验证读写分离效果（查看日志中的数据库切换）
+6. 测试 ElasticSearch 搜索功能
+7. 填写测试报告

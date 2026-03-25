@@ -1,0 +1,8 @@
+# MySQL 从库配置
+[mysqld]
+server-id=2
+read-only=1
+relay-log=mysql-relay-bin.log
+gtid-mode=ON
+enforce-gtid-consistency=ON
+replicate-do-db=seckill

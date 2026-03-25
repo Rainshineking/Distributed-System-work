@@ -3,9 +3,12 @@ package com.example.productservice.controller;
 import com.example.common.core.Result;
 import com.example.productservice.dto.CreateProductRequest;
 import com.example.productservice.entity.Product;
+import com.example.productservice.entity.ProductDocument;
+import com.example.productservice.service.ProductSearchService;
 import com.example.productservice.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +19,7 @@ import java.util.List;
 public class ProductController {
     
     private final ProductService productService;
+    private final ProductSearchService productSearchService;
     
     @GetMapping("/health")
     public Result<String> health() {
@@ -55,5 +59,26 @@ public class ProductController {
     public Result<String> deleteProduct(@PathVariable("id") Long id) {
         productService.deleteProduct(id);
         return Result.success("商品删除成功");
+    }
+    
+    /**
+     * 搜索商品（ElasticSearch）
+     */
+    @GetMapping("/search")
+    public Result<Page<ProductDocument>> searchProducts(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        Page<ProductDocument> result = productSearchService.searchByName(keyword, page, size);
+        return Result.success(result);
+    }
+    
+    /**
+     * 同步所有商品到 ElasticSearch
+     */
+    @PostMapping("/sync/all")
+    public Result<String> syncAllProducts() {
+        productSearchService.syncAllProducts();
+        return Result.success("已同步所有商品到 ElasticSearch");
     }
 }

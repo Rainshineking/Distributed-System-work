@@ -7,10 +7,10 @@ x-registry-mirror: &registry-mirror
 version: '3.8'
 
 services:
-  # MySQL 数据库
-  mysql:
+  # MySQL 主库（写库）
+  mysql-master:
     image: mysql:8.0
-    container_name: seckill-mysql
+    container_name: seckill-mysql-master
     ports:
       - "3307:3306"
     environment:
@@ -19,7 +19,8 @@ services:
       MYSQL_USER: seckill
       MYSQL_PASSWORD: secret
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-master-data:/var/lib/mysql
+      - ./mysql/master.cnf:/etc/mysql/conf.d/master.cnf:ro
     networks:
       - seckill-network
     restart: always
@@ -28,6 +29,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # MySQL 从库（读库）
+  mysql-slave:
+    image: mysql:8.0
+    container_name: seckill-mysql-slave
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: verysecret
+      MYSQL_DATABASE: seckill
+      MYSQL_USER: seckill
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql-slave-data:/var/lib/mysql
+      - ./mysql/slave.cnf:/etc/mysql/conf.d/slave.cnf:ro
+    depends_on:
+      - mysql-master
+    networks:
+      - seckill-network
+    restart: always
 
   # Redis 缓存
   redis:
@@ -66,14 +87,14 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      mysql:
+      mysql-master:
         condition: service_healthy
       redis:
         condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-master:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_DATA_REDIS_HOST=redis
@@ -91,14 +112,14 @@ services:
     ports:
       - "8082:8080"
     depends_on:
-      mysql:
+      mysql-master:
         condition: service_healthy
       redis:
         condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-master:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_DATA_REDIS_HOST=redis
@@ -116,17 +137,25 @@ services:
     ports:
       - "8083:8080"
     depends_on:
-      mysql:
+      mysql-master:
         condition: service_healthy
       redis:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=seckill
-      - SPRING_DATASOURCE_PASSWORD=secret
+      # 主库（写库）- 用于写操作
+      - SPRING_DATASOURCE_WRITE_URL=jdbc:mysql://mysql-master:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_WRITE_USERNAME=seckill
+      - SPRING_DATASOURCE_WRITE_PASSWORD=secret
+      # 从库（读库）- 用于读操作
+      - SPRING_DATASOURCE_READ_URL=jdbc:mysql://mysql-slave:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_READ_USERNAME=seckill
+      - SPRING_DATASOURCE_READ_PASSWORD=secret
       - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
     networks:
       - seckill-network
     restart: always
@@ -140,14 +169,14 @@ services:
     ports:
       - "8084:8080"
     depends_on:
-      mysql:
+      mysql-master:
         condition: service_healthy
       redis:
         condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-master:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_DATA_REDIS_HOST=redis
@@ -165,14 +194,14 @@ services:
     ports:
       - "8085:8080"
     depends_on:
-      mysql:
+      mysql-master:
         condition: service_healthy
       redis:
         condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8080
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-master:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=seckill
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_DATA_REDIS_HOST=redis
@@ -201,6 +230,44 @@ services:
       - seckill-network
     restart: always
 
+  # ElasticSearch 搜索引擎
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: seckill-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - seckill-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health | grep -q 'status'\\s*:\\s*'\\(green\\|yellow\\)'"
+]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana (ElasticSearch 可视化界面)
+  kibana:
+    image: kibana:8.11.0
+    container_name: seckill-kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - seckill-network
+    restart: always
+
   # Nginx 负载均衡和动静分离
   nginx:
     image: nginx:alpine
@@ -217,9 +284,11 @@ services:
     restart: always
 
 volumes:
-  mysql-data:
+  mysql-master-data:
+  mysql-slave-data:
   redis-data:
   rabbitmq-data:
+  elasticsearch-data:
 
 networks:
   seckill-network:
