@@ -12,6 +12,10 @@
 - ✅ 缓存策略（Redis 缓存 + 缓存问题处理）
 - ✅ **读写分离**（MySQL 主从复制 + 自动切换）
 - ✅ **ElasticSearch 搜索**（商品全文检索）
+- ✅ **消息队列**（RabbitMQ 异步下单、削峰填谷）
+- ✅ **分库分表**（ShardingSphere-JDBC 按用户 ID 分库、按订单 ID 分表）
+- ✅ **幂等性控制**（Redis 防重复下单）
+- ✅ **分布式 ID**（雪花算法生成订单 ID）
 
 ## 项目结构
 
@@ -42,11 +46,13 @@ Distributed-System-work/
 ### 后端技术
 - Spring Boot 3.2
 - Spring Cloud Gateway (API 网关)
-- MySQL 8.0 (主从复制、读写分离)
-- Redis 7.0
+- MySQL 8.0 (主从复制、读写分离、分库分表)
+- Redis 7.0 (缓存、幂等性控制)
 - Redisson (分布式锁)
-- RabbitMQ (消息队列)
+- RabbitMQ (消息队列、异步下单、削峰填谷)
 - ElasticSearch 8.11 (全文检索)
+- ShardingSphere-JDBC 5.3.2 (分库分表)
+- Snowflake Algorithm (雪花算法生成订单 ID)
 - JWT (认证)
 
 ### 前端技术
