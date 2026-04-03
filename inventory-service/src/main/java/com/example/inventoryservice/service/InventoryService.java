@@ -4,6 +4,7 @@ import com.example.common.exception.BusinessException;
 import com.example.inventoryservice.dto.DecreaseStockRequest;
 import com.example.inventoryservice.entity.Inventory;
 import com.example.inventoryservice.repository.InventoryRepository;
+import com.example.inventoryservice.util.RedisInventoryManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -22,6 +23,7 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private final RedissonClient redissonClient;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisInventoryManager redisInventoryManager;
     
     @Transactional
     public Inventory createInventory(Long productId, Integer stock) {

@@ -12,7 +12,7 @@
 - ✅ 缓存策略（Redis 缓存 + 缓存问题处理）
 - ✅ **读写分离**（MySQL 主从复制 + 自动切换）
 - ✅ **ElasticSearch 搜索**（商品全文检索）
-- ✅ **消息队列**（RabbitMQ 异步下单、削峰填谷）
+- ✅ **消息队列**（Kafka 异步下单、削峰填谷）
 - ✅ **分库分表**（ShardingSphere-JDBC 按用户 ID 分库、按订单 ID 分表）
 - ✅ **幂等性控制**（Redis 防重复下单）
 - ✅ **分布式 ID**（雪花算法生成订单 ID）
@@ -501,6 +501,34 @@ CREATE TABLE orders (
 - **访问地址**：http://localhost:5601
 - **索引名称**：products
 
+### 6. 分布式事务与一致性（本次新增）
+
+#### 基于 Redis 的库存预扣减
+- **实现方式**：在 Redis 中维护商品库存，使用原子操作进行预扣减
+- **防超卖**：通过 Lua 脚本保证库存检查和扣减的原子性
+- **限购**：每个用户对同一商品只能秒杀一次（幂等性控制）
+- **代码位置**：`RedisInventoryManager.tryReserveStock()`
+
+#### 基于消息的最终一致性
+- **实现模式**：TCC（Try-Confirm-Cancel）事务模式
+- **消息队列**：Kafka
+- **事务流程**：
+  1. **Try 阶段**：订单服务创建订单（状态=待支付），发送订单创建消息
+  2. **库存预扣减**：库存服务收到消息，基于 Redis 预扣减库存
+  3. **Confirm 阶段**：用户支付成功，订单服务发送订单确认消息，库存服务确认库存扣减
+  4. **Cancel 阶段**：订单超时或取消，订单服务发送订单取消消息，库存服务回滚库存
+- **消息主题**：
+  - `seckill-transaction-topic`：订单事务消息
+  - `seckill-inventory-topic`：库存事务消息
+- **代码位置**：
+  - 订单服务：`TransactionMessageProducer`、`OrderKafkaListener`
+  - 库存服务：`InventoryTransactionProducer`、`OrderTransactionListener`
+
+#### 幂等性控制
+- **实现方式**：Redis + 唯一业务标识
+- **场景**：同一用户同一商品只能秒杀一次
+- **代码位置**：`IdempotencyUtil.isOperationAllowed()`
+
 ## Nginx 配置
 
 ### 负载均衡
@@ -627,12 +655,11 @@ docker-compose down
 ### 测试
 - ✅ JMeter 压力测试（测试计划已创建）
 
-## 下一步
+### 作业要求
 
-1. ✅ JMeter 测试计划已创建（`jmeter/seckill_system_test_plan.jmx`）
-2. 执行 JMeter 压力测试（参考 `jmeter/README.md`）
-3. 观察响应时间和负载均衡效果
-4. 验证缓存命中率和分布式锁效果
-5. 验证读写分离效果（查看日志中的数据库切换）
-6. 测试 ElasticSearch 搜索功能
-7. 填写测试报告
+- ✅ 消息队列实现秒杀下单功能（Kafka 异步处理订单创建，削峰填谷）
+- ✅ Redis 缓存库存（基于 Redis 实现库存预扣减，防超卖、限购）
+- ✅ 雪花算法生成订单 ID（SnowflakeIdGenerator）
+- ✅ 幂等性控制（防止重复下单，同一用户同一商品只能秒杀一次）
+- ✅ 数据一致性保障（基于消息的最终一致性 + TCC 事务模式）
+- ✅ 分库分表（ShardingSphere-JDBC 按用户 ID 分库、按订单 ID 分表）

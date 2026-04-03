@@ -1,4 +1,4 @@
-package com.example.orderservice.config;
+package com.example.inventoryservice.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 /**
- * Kafka 配置
+ * Kafka 配置 - 库存服务
  */
 @Configuration
 public class KafkaConfig {
@@ -14,28 +14,6 @@ public class KafkaConfig {
     public static final String ORDER_TOPIC = "seckill-order-topic";
     public static final String TRANSACTION_TOPIC = "seckill-transaction-topic";
     public static final String INVENTORY_TOPIC = "seckill-inventory-topic";
-    
-    /**
-     * 创建订单主题
-     */
-    @Bean
-    public NewTopic orderTopic() {
-        return TopicBuilder.name(ORDER_TOPIC)
-                .partitions(3)  // 3个分区，提高并发处理能力
-                .replicas(1)    // 1个副本（开发环境）
-                .build();
-    }
-    
-    /**
-     * 创建事务主题（用于订单和库存的一致性）
-     */
-    @Bean
-    public NewTopic transactionTopic() {
-        return TopicBuilder.name(TRANSACTION_TOPIC)
-                .partitions(3)
-                .replicas(1)
-                .build();
-    }
     
     /**
      * 创建库存主题（库存服务发送消息给订单服务）
