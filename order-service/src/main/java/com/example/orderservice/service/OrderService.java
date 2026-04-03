@@ -1,7 +1,6 @@
 package com.example.orderservice.service;
 
 import com.example.common.exception.BusinessException;
-import com.example.orderservice.config.RabbitMQConfig;
 import com.example.orderservice.dto.CreateOrderRequest;
 import com.example.orderservice.dto.OrderMessage;
 import com.example.orderservice.entity.Order;
@@ -10,7 +9,6 @@ import com.example.orderservice.util.IdempotencyUtil;
 import com.example.orderservice.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,10 +23,10 @@ import java.util.concurrent.TimeUnit;
 public class OrderService {
     
     private final OrderRepository orderRepository;
-    private final RabbitTemplate rabbitTemplate;
     private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final IdempotencyUtil idempotencyUtil;
     private final StringRedisTemplate redisTemplate;
+    private final OrderKafkaProducer orderKafkaProducer;
     
     /**
      * 异步创建订单（秒杀下单）
@@ -74,14 +72,10 @@ public class OrderService {
         message.setTotalPrice(request.getTotalPrice());
         message.setTimestamp(System.currentTimeMillis());
         
-        // 5. 发送消息到 MQ（异步处理）
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.ORDER_EXCHANGE,
-                RabbitMQConfig.ORDER_ROUTING_KEY,
-                message
-        );
+        // 5. 发送消息到 Kafka（异步处理）
+        orderKafkaProducer.sendOrderMessage(message);
         
-        log.info("秒杀订单创建成功，订单 ID: {}, 用户 ID: {}, 商品 ID: {}, 已发送 MQ 异步处理", 
+        log.info("秒杀订单创建成功，订单 ID: {}, 用户 ID: {}, 商品 ID: {}, 已发送 Kafka 异步处理", 
                 orderId, userId, productId);
         
         return orderId;

@@ -49,7 +49,7 @@ Distributed-System-work/
 - MySQL 8.0 (主从复制、读写分离、分库分表)
 - Redis 7.0 (缓存、幂等性控制)
 - Redisson (分布式锁)
-- RabbitMQ (消息队列、异步下单、削峰填谷)
+- **Kafka** (消息队列、异步下单、削峰填谷)
 - ElasticSearch 8.11 (全文检索)
 - ShardingSphere-JDBC 5.3.2 (分库分表)
 - Snowflake Algorithm (雪花算法生成订单 ID)
@@ -83,7 +83,8 @@ docker-compose up -d
 - MySQL Master (端口：3307) - 主库（写库）
 - MySQL Slave (端口：3308) - 从库（读库）
 - Redis (端口：6379)
-- RabbitMQ (端口：5672, 15672)
+- **Zookeeper** (端口：2181) - Kafka 依赖
+- **Kafka** (端口：9092) - 消息队列
 - ElasticSearch (端口：9200)
 - Kibana (端口：5601) - ES 可视化界面
 - user-service-1 (端口：8081)

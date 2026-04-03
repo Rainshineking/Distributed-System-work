@@ -1,11 +1,11 @@
 package com.example.orderservice.dto;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.math.BigDecimal;
 
 /**
  * 订单消息对象

@@ -1,30 +1,32 @@
 package com.example.orderservice.listener;
 
-import com.example.orderservice.config.RabbitMQConfig;
+import com.example.orderservice.config.KafkaConfig;
 import com.example.orderservice.dto.OrderMessage;
 import com.example.orderservice.entity.Order;
 import com.example.orderservice.repository.OrderRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
 /**
- * 订单消息监听器 - 异步处理订单创建
+ * Kafka 订单消息监听器 - 异步处理订单创建
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class OrderMessageListener {
+public class OrderKafkaListener {
     
     private final OrderRepository orderRepository;
+    
+    public OrderKafkaListener(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
     
     /**
      * 监听订单创建消息
      */
-    @RabbitListener(queues = RabbitMQConfig.ORDER_QUEUE)
+    @KafkaListener(topics = KafkaConfig.ORDER_TOPIC, groupId = "order-group")
     public void handleOrderMessage(OrderMessage message) {
         try {
             log.info("收到订单创建消息：orderId={}, userId={}, productId={}", 

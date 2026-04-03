@@ -1,9 +1,9 @@
 package com.example.orderservice.util;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 幂等性控制工具 - 防止重复下单
