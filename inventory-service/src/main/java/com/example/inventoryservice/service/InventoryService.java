@@ -27,6 +27,19 @@ public class InventoryService {
     
     @Transactional
     public Inventory createInventory(Long productId, Integer stock) {
+        // 检查库存是否已存在
+        Inventory existingInventory = inventoryRepository.findByProductId(productId).orElse(null);
+        
+        if (existingInventory != null) {
+            log.warn("库存已存在，执行更新操作，商品 ID: {}, 原库存：{}", productId, existingInventory.getStock());
+            existingInventory.setStock(stock);
+            // 删除 Redis 缓存，保证数据一致性
+            String cacheKey = "inventory:" + productId;
+            redisTemplate.delete(cacheKey);
+            return inventoryRepository.save(existingInventory);
+        }
+        
+        // 创建新库存
         Inventory inventory = new Inventory();
         inventory.setProductId(productId);
         inventory.setStock(stock);
@@ -70,7 +83,9 @@ public class InventoryService {
                 throw new BusinessException("获取锁失败，系统繁忙");
             }
             
-            Inventory inventory = getInventory(productId);
+            // 从数据库获取库存（确保有 ID）
+            Inventory inventory = inventoryRepository.findByProductId(productId)
+                    .orElseThrow(() -> new BusinessException("库存信息不存在"));
             
             if (inventory.getStock() < quantity) {
                 throw new BusinessException("库存不足");
@@ -85,6 +100,7 @@ public class InventoryService {
             
             inventoryRepository.save(inventory);
             
+            // 删除 Redis 缓存，下次查询会重新加载
             String cacheKey = "inventory:" + productId;
             redisTemplate.delete(cacheKey);
             

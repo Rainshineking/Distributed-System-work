@@ -18,9 +18,15 @@ services:
       MYSQL_DATABASE: seckill
       MYSQL_USER: seckill
       MYSQL_PASSWORD: secret
+    command: 
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --binlog-do-db=seckill
     volumes:
       - mysql-master-data:/var/lib/mysql
-      - ./mysql/master.cnf:/etc/mysql/conf.d/master.cnf:ro
     networks:
       - seckill-network
     restart: always
@@ -41,9 +47,15 @@ services:
       MYSQL_DATABASE: seckill
       MYSQL_USER: seckill
       MYSQL_PASSWORD: secret
+    command: 
+      - --server-id=2
+      - --read-only=1
+      - --relay-log=mysql-relay-bin.log
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --replicate-do-db=seckill
     volumes:
       - mysql-slave-data:/var/lib/mysql
-      - ./mysql/slave.cnf:/etc/mysql/conf.d/slave.cnf:ro
     depends_on:
       - mysql-master
     networks:
@@ -191,10 +203,12 @@ services:
       - SPRING_DATASOURCE_WRITE_URL=jdbc:mysql://mysql-master:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_WRITE_USERNAME=seckill
       - SPRING_DATASOURCE_WRITE_PASSWORD=secret
+      - SPRING_DATASOURCE_WRITE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
       # 从库（读库）- 用于读操作
       - SPRING_DATASOURCE_READ_URL=jdbc:mysql://mysql-slave:3306/seckill?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_READ_USERNAME=seckill
       - SPRING_DATASOURCE_READ_PASSWORD=secret
+      - SPRING_DATASOURCE_READ_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
     networks:

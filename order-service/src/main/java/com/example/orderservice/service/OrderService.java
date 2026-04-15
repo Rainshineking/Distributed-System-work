@@ -27,6 +27,7 @@ public class OrderService {
     private final IdempotencyUtil idempotencyUtil;
     private final StringRedisTemplate redisTemplate;
     private final OrderKafkaProducer orderKafkaProducer;
+    private final TransactionMessageProducer transactionMessageProducer;
     
     /**
      * 异步创建订单（秒杀下单）

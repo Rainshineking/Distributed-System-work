@@ -44,7 +44,7 @@ public class InventoryController {
     }
     
     @PostMapping("/{productId}")
-    public Result<Inventory> createInventory(@PathVariable("productId") Long productId, @RequestParam Integer stock) {
+    public Result<Inventory> createInventory(@PathVariable("productId") Long productId, @RequestParam("stock") Integer stock) {
         Inventory inventory = inventoryService.createInventory(productId, stock);
         return Result.success("库存创建成功", inventory);
     }

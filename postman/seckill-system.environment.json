@@ -1,0 +1,54 @@
+{
+  "name": "秒杀系统环境",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "username",
+      "value": "testuser",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "password",
+      "value": "123456",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "email",
+      "value": "test@example.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "productId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

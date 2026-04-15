@@ -76,7 +76,7 @@ Distributed-System-work/
 
 ```bash
 cd d:\大三下资料\分布式\Distributed-System-work
-docker-compose up -d
+docker compose up -d
 ```
 
 **启动后包含以下容器：**
@@ -97,17 +97,17 @@ docker-compose up -d
 
 **查看日志：**
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 **停止所有服务：**
 ```bash
-docker-compose down
+docker compose down
 ```
 
 **重启某个服务：**
 ```bash
-docker-compose restart product-service
+docker compose restart product-service
 ```
 
 ### 方式二：本地开发模式（适合调试）
@@ -115,7 +115,7 @@ docker-compose restart product-service
 #### 1. 启动中间件
 
 ```bash
-docker-compose up -d mysql redis rabbitmq nginx
+docker compose up -d mysql redis rabbitmq nginx
 ```
 
 #### 2. 安装本地依赖
@@ -609,57 +609,5 @@ docker logs user-service-2 | grep "POST /api/users/login"
 ## 停止服务
 
 ```bash
-docker-compose down
+docker compose down
 ```
-
-## 常见问题
-
-### 1. 端口冲突
-修改 `docker-compose.yml` 中的端口映射
-
-### 2. MySQL 连接失败
-确保 MySQL 容器已启动，检查 JDBC URL 配置
-
-### 3. Redis 连接失败
-确保 Redis 容器已启动，检查 Redis 配置
-
-### 4. JWT Token 无效
-检查 JWT 密钥配置，确保密钥长度 >= 512 bits
-
-## 作业完成清单
-
-### 基础功能
-- ✅ 系统设计文档（`documentation/系统设计文档.md`）
-- ✅ 系统架构图（服务拆分）
-- ✅ RESTful API 接口定义
-- ✅ 数据库 ER 图
-- ✅ 技术栈选型说明
-- ✅ Git 仓库初始化
-- ✅ Spring Boot + JPA + MySQL 环境
-- ✅ 用户注册登录功能
-
-### 容器化与部署
-- ✅ Docker 容器化部署
-- ✅ Nginx 负载均衡
-- ✅ 动静分离
-
-### 高并发处理
-- ✅ Redis 缓存
-- ✅ 分布式锁（Redisson）
-- ✅ 缓存穿透/击穿/雪崩处理（代码已实现）
-
-### 高并发读（本次新增）
-- ✅ **读写分离**（MySQL 主从复制 + AOP 自动切换）
-- ✅ **ElasticSearch 搜索**（商品全文检索）
-
-### 测试
-- ✅ JMeter 压力测试（测试计划已创建）
-
-### 作业要求
-
-- ✅ 消息队列实现秒杀下单功能（Kafka 异步处理订单创建，削峰填谷）
-- ✅ Redis 缓存库存（基于 Redis 实现库存预扣减，防超卖、限购）
-- ✅ 雪花算法生成订单 ID（SnowflakeIdGenerator）
-- ✅ 幂等性控制（防止重复下单，同一用户同一商品只能秒杀一次）
-- ✅ 数据一致性保障（基于消息的最终一致性 + TCC 事务模式）
-- ✅ 分库分表（ShardingSphere-JDBC 按用户 ID 分库、按订单 ID 分表）

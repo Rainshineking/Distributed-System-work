@@ -34,7 +34,7 @@ public class ProductService {
     @Transactional
     public Product createProduct(CreateProductRequest request) {
         if (productRepository.existsByName(request.getName())) {
-            throw new BusinessException("商品名称已存在");
+            throw new BusinessException("已创建");
         }
         
         Product product = new Product();

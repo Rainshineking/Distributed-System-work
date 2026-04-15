@@ -1,0 +1,620 @@
+{
+  "info": {
+    "name": "分布式秒杀系统 - 完整测试",
+    "description": "完整的秒杀系统 API 测试集合，包含用户、商品、库存、订单所有功能",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01-服务健康检查",
+      "item": [
+        {
+          "name": "User Service 健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}:8081/api/users/health",
+              "host": ["{{base_url}}"],
+              "port": "8081",
+              "path": ["api", "users", "health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"状态码为 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"服务正常\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product Service 健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}:8083/api/products/health",
+              "host": ["{{base_url}}"],
+              "port": "8083",
+              "path": ["api", "products", "health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"状态码为 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inventory Service 健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}:8084/api/inventory/health",
+              "host": ["{{base_url}}"],
+              "port": "8084",
+              "path": ["api", "inventory", "health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"状态码为 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Order Service 健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}:8085/api/orders/health",
+              "host": ["{{base_url}}"],
+              "port": "8085",
+              "path": ["api", "orders", "health"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"状态码为 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-用户管理",
+      "item": [
+        {
+          "name": "用户注册",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}:8081/api/users/register",
+              "host": ["{{base_url}}"],
+              "port": "8081",
+              "path": ["api", "users", "register"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"注册成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data.id).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "用户登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}:8081/api/users/login",
+              "host": ["{{base_url}}"],
+              "port": "8081",
+              "path": ["api", "users", "login"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"登录成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+                  "    console.log(\"Token: \" + jsonData.data.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-商品管理",
+      "item": [
+        {
+          "name": "获取商品列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}:8083/api/products",
+              "host": ["{{base_url}}"],
+              "port": "8083",
+              "path": ["api", "products"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"获取商品列表成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    if(jsonData.data && jsonData.data.length > 0) {",
+                  "        pm.collectionVariables.set(\"productId\", jsonData.data[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "创建商品",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"iPhone 15 Pro\",\n  \"price\": 9999.00,\n  \"description\": \"Apple iPhone 15 Pro 256GB 钛金属\",\n  \"imageUrl\": \"https://example.com/iphone15pro.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}:8083/api/products",
+              "host": ["{{base_url}}"],
+              "port": "8083",
+              "path": ["api", "products"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"创建商品成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data.id).to.exist;",
+                  "    pm.collectionVariables.set(\"productId\", jsonData.data.id);",
+                  "    console.log(\"商品 ID: \" + jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-库存管理",
+      "item": [
+        {
+          "name": "创建库存",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}:8084/api/inventory/{{productId}}?stock=100",
+              "host": ["{{base_url}}"],
+              "port": "8084",
+              "path": ["api", "inventory", "{{productId}}"],
+              "query": [
+                {
+                  "key": "stock",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"创建库存成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// 如果 productId 为空，使用默认值 1",
+                  "if (!pm.environment.get(\"productId\") || pm.environment.get(\"productId\") === \"\") {",
+                  "    pm.environment.set(\"productId\", \"1\");",
+                  "    console.log(\"✓ 已设置 productId = 1\");",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "初始化 Redis 库存",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}:8084/api/inventory/decrease",
+              "host": ["{{base_url}}"],
+              "port": "8084",
+              "path": ["api", "inventory", "decrease"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId}},\n  \"quantity\": 1\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 如果 productId 为空，使用默认值 1",
+                  "if (!pm.environment.get(\"productId\") || pm.environment.get(\"productId\") === \"\") {",
+                  "    pm.environment.set(\"productId\", \"1\");",
+                  "    console.log(\"✓ 已设置 productId = 1\");",
+                  "}",
+                  "",
+                  "pm.test(\"扣减库存成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log(\"✓ Redis 库存扣减成功\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询库存",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}:8084/api/inventory/{{productId}}",
+              "host": ["{{base_url}}"],
+              "port": "8084",
+              "path": ["api", "inventory", "{{productId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"查询库存成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    console.log(\"库存数量：\" + jsonData.data.stock);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05-秒杀下单",
+      "item": [
+        {
+          "name": "秒杀下单（第一次）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"productId\": {{productId}},\n  \"quantity\": 1,\n  \"totalPrice\": 9999.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}:8085/api/orders",
+              "host": ["{{base_url}}"],
+              "port": "8085",
+              "path": ["api", "orders"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test\"秒杀成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data).to.exist;",
+                  "    pm.collectionVariables.set(\"orderId\", jsonData.data.id);",
+                  "    console.log(\"订单 ID: \" + jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "秒杀下单（第二次 - 测试幂等性）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"productId\": {{productId}},\n  \"quantity\": 1,\n  \"totalPrice\": 9999.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}:8085/api/orders",
+              "host": ["{{base_url}}"],
+              "port": "8085",
+              "path": ["api", "orders"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test\"幂等性测试 - 重复下单应失败\", function() {",
+                  "    pm.response.to.have.status(400);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(400);",
+                  "    console.log(\"✓ 幂等性测试通过：\" + jsonData.message);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06-订单查询",
+      "item": [
+        {
+          "name": "查询订单详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}:8085/api/orders/{{orderId}}",
+              "host": ["{{base_url}}"],
+              "port": "8085",
+              "path": ["api", "orders", "{{orderId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"查询订单成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data.id).to.eql(pm.collectionVariables.get(\"orderId\"));",
+                  "    console.log(\"订单状态：\" + jsonData.data.status);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询用户订单列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}:8085/api/orders/user/{{userId}}",
+              "host": ["{{base_url}}"],
+              "port": "8085",
+              "path": ["api", "orders", "user", "{{userId}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"查询订单列表成功\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "testuser",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "123456",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "test@example.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

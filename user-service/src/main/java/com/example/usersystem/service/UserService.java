@@ -32,12 +32,12 @@ public class UserService {
     public User register(RegisterRequest request) {
         // 检查用户名是否存在
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException("用户已注册");
         }
         
         // 检查邮箱是否存在
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("邮箱已被注册");
+            throw new BusinessException("用户已注册");
         }
         
         // 创建用户
